@@ -1,14 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:cryptography/cryptography.dart';
+import 'package:get/get.dart';
+import 'controller.dart';
 
 void main() async {
-  List<String> items = [];
-
-  var stream = Stream<int>.fromIterable(Iterable<int>.generate(256, (x) => x));
-  await for (int i in stream) {
-    items.add(await stringForStringWithIndex('string', i));
-  }
+  final Controller controller = Get.put(Controller());
+  controller.itemsGen('TEXT');
 
   runApp(
     MaterialApp(
@@ -20,54 +16,15 @@ void main() async {
           fontFamily: 'RobotoMono',
         )),
       ),
-      home: MyApp(items: items),
+      home: MyApp(),
     ),
   );
 }
 
-Future<String> stringForStringWithIndex(String string, int index) async {
-  final message = <int>[1, 2, 3];
-  final hash = await Sha256().hash(message);
-  final secretKey = SecretKey(hash.bytes);
-
-  final algorithm = Hkdf(
-    hmac: Hmac(Sha256()),
-    outputLength: 32,
-  );
-  final nonce = [index];
-
-  SecretKey k = await algorithm.deriveKey(
-    secretKey: secretKey,
-    nonce: nonce,
-  );
-
-  var out = await k.extractBytes();
-  var value = '';
-  for (int i in out) value += i.toRadixString(16);
-  return value.toUpperCase();
-}
-
-class MyApp extends StatefulWidget {
-  final List<String> items;
-
-  const MyApp({Key? key, required this.items}) : super(key: key);
-
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  final controller = TextEditingController();
-
-  @override
-  void dispose() {
-    // Clean up the controller when the widget is disposed.
-    controller.dispose();
-    super.dispose();
-  }
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final Controller controller = Get.put(Controller());
     return Scaffold(
       appBar: AppBar(
         title: const Text('hkdf'),
@@ -77,39 +34,36 @@ class _MyAppState extends State<MyApp> {
           Container(
             height: 44,
             child: Padding(
-              padding: const EdgeInsets.only(left: 20),
+              padding: const EdgeInsets.only(left: 20, right: 20),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      controller: controller,
-                      decoration: const InputDecoration(hintText: 'Enter a search term'),
+                      controller: controller.c,
+                      decoration: const InputDecoration(hintText: 'Enter master key phrase'),
                     ),
                   ),
                   ElevatedButton(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              content: Text(controller.text),
-                            );
-                          },
-                        );
+                      onPressed: () async {
+                        print(controller.c.text);
+                        print(controller.items.length);
+                        await controller.itemsGen(controller.c.text);
                       },
-                      child: Text('Go'))
+                      child: Text('GO'))
                 ],
               ),
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: widget.items.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(widget.items[index]),
-                );
-              },
+            child: Obx(
+              () => ListView.builder(
+                itemCount: controller.items.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(controller.items[index]),
+                  );
+                },
+              ),
             ),
           ),
         ],
