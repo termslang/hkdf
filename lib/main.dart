@@ -3,9 +3,6 @@ import 'package:get/get.dart';
 import 'controller.dart';
 
 void main() async {
-  final Controller controller = Get.put(Controller());
-  controller.itemsGen('TEXT');
-
   runApp(
     MaterialApp(
       theme: ThemeData(
